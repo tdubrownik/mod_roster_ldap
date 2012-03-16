@@ -47,7 +47,9 @@ end
 
 local function ldap_to_entry(dn, attrs)
 	local host = dc_to_host(dn);
-	return { jid = attrs[ldap_uidattr]..'@'..host, name=attrs[ldap_nameattr] };
+	local na = attrs[ldap_nameattr];
+	local name = type(na) == 'table' and na[1] or na;
+	return { jid = attrs[ldap_uidattr]..'@'..host, name=name };
 end
 
 local function inject_roster_contacts(username, host, roster)
