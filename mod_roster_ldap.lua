@@ -98,9 +98,9 @@ local function update_roster()
 		local entry = ldap_to_entry(dn, attrs);
 		ldap_roster[entry.jid] = entry
 	end
-	module:log('info', 'updated LDAP roster')
+	module:log('debug', 'LDAP roster has been refreshed')
 	--push_all_rosters()
-	--module:log('info', 'pushed updated rosters')
+	--module:log('info', 'LDAP roster has been pushed')
 	return refresh_time
 end
 
