@@ -1,17 +1,25 @@
 local lualdap = require 'lualdap';
 local timer = require 'util.timer';
-local options = module:get_option('ldap_roster') or {}
-local ldap_server = options.ldap_server or 'ldap.hackerspace.pl'
-local ldap_tls = options.ldap_tls or true;
-local ldap_filter = options.ldap_filter or 'memberOf=cn=xmpp-users,ou=Group,dc=hackerspace,dc=pl';
-local ldap_base = options.ldap_base or 'ou=People,dc=hackerspace,dc=pl';
-local ldap_binddn = options.ldap_binddn or '';
-local ldap_bindpass = options.ldap_bindpass or '';
-local ldap_scope = options.ldap_scope or 'onelevel';
-local ldap_uidattr = options.ldap_uidattr or 'uid';
+
+-- Get LDAP parameters from mod_auth_ldap settings
+local ldap_server   = module:get_option_string("ldap_server", "localhost");
+local ldap_base     = assert(module:get_option_string("ldap_base"), "ldap_base is a required option for ldap");
+local ldap_tls      = module:get_option_boolean("ldap_tls");
+local ldap_filter   = module:get_option_string("ldap_filter", "(uid=*)");
+local ldap_binddn   = module:get_option_string("ldap_rootdn", "");
+local ldap_bindpass = module:get_option_string("ldap_password", "");
+local ldap_scope    = module:get_option_string("ldap_scope", "subtree");
+
+-- Get mod_roster_ldap ones from our own configuration container
+local options       = module:get_option('ldap_roster') or {}
+local ldap_uidattr  = options.ldap_uidattr or 'uid';
 local ldap_nameattr = options.ldap_nameattr or 'cn';
-local group_name = options.group_name or 'Hackerspace';
-local refresh_time = options.refresh_time or 60;
+local group_name    = options.group_name or 'Shared roster';
+local refresh_time  = options.refresh_time or 60;
+local jid_hostname  = options.jid_hostname or 'virtualhost';
+
+module:log('debug', 'Module enabled, searching for \''..ldap_filter..'\' in '..ldap_base..' ('..ldap_server..')')
+module:log('debug', 'Refreshing shared roster every '..refresh_time..' seconds')
 
 local lc = assert(lualdap.open_simple(ldap_server, ldap_binddn, ldap_bindpass, ldap_tls),
 	'Could not connect to LDAP server');
@@ -46,7 +54,12 @@ local function dc_to_host(dn)
 end
 
 local function ldap_to_entry(dn, attrs)
-	local host = dc_to_host(dn);
+	local host = jid_hostname;
+	if jid_hostname == 'virtualhost' then
+		host = module:get_host();
+	elseif jid_hostname == 'basedn' then
+		host = dc_to_host(dn)
+	end
 	local na = attrs[ldap_nameattr];
 	local name = type(na) == 'table' and na[1] or na;
 	return { jid = attrs[ldap_uidattr]..'@'..host, name=name };
@@ -98,9 +111,9 @@ local function update_roster()
 		local entry = ldap_to_entry(dn, attrs);
 		ldap_roster[entry.jid] = entry
 	end
-	module:log('info', 'updated LDAP roster')
+	module:log('debug', 'LDAP roster has been refreshed')
 	--push_all_rosters()
-	--module:log('info', 'pushed updated rosters')
+	--module:log('info', 'LDAP roster has been pushed')
 	return refresh_time
 end
 
