@@ -16,6 +16,7 @@ local ldap_uidattr  = options.ldap_uidattr or 'uid';
 local ldap_nameattr = options.ldap_nameattr or 'cn';
 local group_name    = options.group_name or 'Shared roster';
 local refresh_time  = options.refresh_time or 60;
+local jid_hostname  = options.jid_hostname or 'virtualhost';
 
 module:log('debug', 'Module enabled, searching for \''..ldap_filter..'\' in '..ldap_base..' ('..ldap_server..')')
 module:log('debug', 'Refreshing shared roster every '..refresh_time..' seconds')
@@ -53,7 +54,12 @@ local function dc_to_host(dn)
 end
 
 local function ldap_to_entry(dn, attrs)
-	local host = dc_to_host(dn);
+	local host = jid_hostname;
+	if jid_hostname == 'virtualhost' then
+		host = module:get_host();
+	elseif jid_hostname == 'basedn' then
+		host = dc_to_host(dn)
+	end
 	local na = attrs[ldap_nameattr];
 	local name = type(na) == 'table' and na[1] or na;
 	return { jid = attrs[ldap_uidattr]..'@'..host, name=name };

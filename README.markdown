@@ -14,6 +14,7 @@ This modules accepts the following additionnal settings:
 * ldap_nameattr: Sets the attribute that sets the user name (displayed in the roster afterwards) (default: cn)
 * group_name: Sets the shared roster name (default: 'Shared roster')
 * refresh_time: Refresh the shared roster every X seconds (default: 60)
+* jid_hostname: Select which source will be used to fill the hostname part of the user JID (default: virtualhost, to use the current virtualhost, may be basedn to use the LDAP basedn or an arbitrary value)
 
 Example:
 ```lua
@@ -22,5 +23,6 @@ ldap_roster = {
 	ldap_nameattr = 'cn';
 	group_name    = 'Shared roster';
 	refresh_time  = 60;
+	jid_hostname  = 'virtualhost'
 };
 ```
